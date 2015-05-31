@@ -6,7 +6,6 @@ import com.dexstudio.chess.entity.ChessBoard;
 import com.dexstudio.chess.entity.ChessFigure;
 import com.dexstudio.chess.entity.ChessMove;
 import com.dexstudio.chess.entity.ChessMoveType;
-import com.dexstudio.chess.entity.MoveMessage;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -15,13 +14,13 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
-import android.graphics.Point;
 import android.graphics.drawable.BitmapDrawable;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Toast;
 
-@SuppressLint("ClickableViewAccessibility")
+@SuppressLint({ "ClickableViewAccessibility", "ShowToast" })
 public class ChessUiView extends View {
 	
 	private float squareSide = 0;
@@ -33,6 +32,13 @@ public class ChessUiView extends View {
 	private ChessFigure cf = null;
 	private ArrayList<ChessMove> moves = null;
 	
+	private boolean disableInteraction = false;
+	
+	//Toasts
+	Toast toast = null;
+	CharSequence text = "You can't move here!";
+	int duration = Toast.LENGTH_SHORT;
+	
 	public ChessUiView(Context context) {
 		super(context);
 		
@@ -41,10 +47,17 @@ public class ChessUiView extends View {
 	public ChessUiView(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		
+		toast = Toast.makeText(context, text, duration);
 	}
 	
 	public void setChessBoard(ChessBoard cb) {
 		this.cb = cb;
+		this.invalidate();
+	}
+	
+	public void setChessBoard(ChessBoard cb, boolean disableInteraction) {
+		this.setChessBoard(cb);
+		this.disableInteraction = disableInteraction;
 	}
 	
 	@Override
@@ -56,6 +69,11 @@ public class ChessUiView extends View {
 	
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
+		if(disableInteraction) {
+			//Interactions with UI is disabled (for evaluation)
+			return super.onTouchEvent(event);
+		}
+		
 		switch(event.getAction()) {
 		case MotionEvent.ACTION_DOWN:
 			ChessUiView.this.highlightedX = (int)(event.getX() / squareSide);
@@ -67,28 +85,29 @@ public class ChessUiView extends View {
 						ChessUiView.this.highlightedY >= 1 && ChessUiView.this.highlightedY <= 8) {
 					//Already selected, we can move
 					ArrayList<ChessMove> moves = ChessUiView.this.cb.getPossibleMoves(ChessUiView.this.cf);
-					MoveMessage mm = null;
+					boolean moveFound = false;
 					for(ChessMove cm : moves) {
 						if(cm.x == (9-ChessUiView.this.highlightedY) && cm.y == ChessUiView.this.highlightedX) {
-							mm = ChessUiView.this.cb.movePlayerFigure(ChessUiView.this.cf, 9-ChessUiView.this.highlightedY, ChessUiView.this.highlightedX);
+							switch(cm.getMoveType()) {
+							case CMT_CAPTURE:
+								
+								ChessUiView.this.cb.captureComputer(ChessUiView.this.highlightedY, ChessUiView.this.highlightedX);
+								ChessUiView.this.cf.setXY(9-ChessUiView.this.highlightedY, ChessUiView.this.highlightedX);
+								break;
+								
+							case CMT_ALLOWED:
+								ChessUiView.this.cf.setXY(9-ChessUiView.this.highlightedY, ChessUiView.this.highlightedX);
+								
+								break;
+							default:
+								break;
+							}
+							moveFound = true;
 							break;
 						}
 					}
-					if(mm != null) {
-						switch(mm) {
-						case SUCCESS:
-							//Sucessfully made move
-							//TODO Check if computer's Figure is captured
-							break;
-							
-						case ERROR_OVERLAP:
-							
-							break;
-							
-						case ERROR_WRONG_MOVE:
-							
-							break;
-						}
+					if(!moveFound) {
+						toast.show();
 					}
 				}
 				ChessUiView.this.toHighlight = false;
@@ -107,7 +126,10 @@ public class ChessUiView extends View {
 			
 			break;
 		case MotionEvent.ACTION_UP:
-			
+			//TODO Perform Computer Step
+			if(ChessUiView.this.toHighlight == false) {
+				ChessUiView.this.cb.makeComputerMove();
+			}
 			break;
 		}
 		return super.onTouchEvent(event);
@@ -168,6 +190,11 @@ public class ChessUiView extends View {
 		}
 		
 		for(ChessFigure cf : this.cb.getComputer()) {
+			//Do not show captured
+			if(cf.isCaptured()) {
+				continue;
+			}
+			// Show captured
 			String uri = "drawable/black_" + cf.getFigureName();
 			//String uri = "drawable/black_knight";
 			

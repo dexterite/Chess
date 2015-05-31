@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="algorithm_array">
+        <item >MiniMax</item>
+        <item >Alpha-Beta Prunning</item>
+    </string-array>
+    
+</resources>

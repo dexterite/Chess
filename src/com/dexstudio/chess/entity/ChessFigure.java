@@ -1,15 +1,25 @@
 package com.dexstudio.chess.entity;
 
-public class ChessFigure {
+public class ChessFigure implements Cloneable {
 	
 	private FigureType ft = null;
 	private int x = 0;
 	private int y = 0;
+	private FigureStatus fs = null;
 	
 	public ChessFigure(FigureType ft) {
 		this.ft = ft;
 		this.x = ft.x;
 		this.y = ft.y;
+		this.fs = FigureStatus.FS_ALIVE;
+	}
+	
+	public void setCaptured() {
+		this.fs = FigureStatus.FS_CAPTURED;
+	}
+	
+	public boolean isCaptured() {
+		return this.fs == FigureStatus.FS_CAPTURED ? true : false;
 	}
 	
 	public String getFigureName() {
@@ -57,6 +67,16 @@ public class ChessFigure {
 			this.y = y;
 			this.name = name;
 		}
+	}
+	
+	@Override
+	public ChessFigure clone() throws CloneNotSupportedException {
+		ChessFigure cf = (ChessFigure)super.clone();
+		cf.fs = this.fs;
+		cf.ft = this.ft;
+		cf.x = this.x;
+		cf.y = this.y;
+		return cf;
 	}
 	
 }
