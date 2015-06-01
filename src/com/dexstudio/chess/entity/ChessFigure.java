@@ -18,6 +18,10 @@ public class ChessFigure implements Cloneable {
 		this.fs = FigureStatus.FS_CAPTURED;
 	}
 	
+	public void unsetCaptured() {
+		this.fs = FigureStatus.FS_ALIVE;
+	}
+	
 	public boolean isCaptured() {
 		return this.fs == FigureStatus.FS_CAPTURED ? true : false;
 	}

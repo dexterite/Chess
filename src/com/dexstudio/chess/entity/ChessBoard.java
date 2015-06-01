@@ -3,6 +3,7 @@ package com.dexstudio.chess.entity;
 import java.util.ArrayList;
 import java.util.Locale;
 
+import com.dexstudio.chess.algorithms.MiniMax2;
 import com.dexstudio.chess.entity.ChessFigure.FigureType;
 
 public class ChessBoard {
@@ -344,11 +345,27 @@ public class ChessBoard {
 		moveNumber++;
 		
 		if(moveNumber % 2 == 0) {
-			//TODO Black Move
-			
+			MiniMax2 mm = new MiniMax2(this.computer, this.player, this.depth);
+			try {
+				mm.startEval();
+				//Move the figure
+				this.moveComputerFigure(mm.getSelectedFigure().getX(), 
+						mm.getSelectedFigure().getY(), mm.getSelectedMove().x, mm.getSelectedMove().y);
+				
+			} catch (CloneNotSupportedException e) {
+				e.printStackTrace();
+			}
 		} else if(moveNumber % 2 != 0) {
-			//TODO White Move
-			
+			MiniMax2 mm = new MiniMax2(this.player, this.computer, this.depth);
+			try {
+				mm.startEval();
+				//Move the figure
+				this.movePlayerFigure(mm.getSelectedFigure().getX(), 
+						mm.getSelectedFigure().getY(), mm.getSelectedMove().x, mm.getSelectedMove().y);
+				
+			} catch (CloneNotSupportedException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 	

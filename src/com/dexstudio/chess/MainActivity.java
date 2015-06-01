@@ -48,7 +48,8 @@ public class MainActivity extends ActionBarActivity {
 			
 			@Override
 			public void onClick(View v) {
-				
+				MainActivity.this.cb.nextMove();
+				MainActivity.this.cuView.invalidate();
 			}
 		});
 		
@@ -56,7 +57,7 @@ public class MainActivity extends ActionBarActivity {
 			
 			@Override
 			public void onClick(View v) {
-				MainActivity.this.cb.nextMove();
+				
 			}
 		});
 	}

@@ -5,6 +5,9 @@ package com.dexstudio.chess.algorithms;
 
 import java.util.ArrayList;
 
+import android.graphics.Point;
+import android.util.Log;
+
 import com.dexstudio.chess.entity.ChessFigure;
 import com.dexstudio.chess.entity.ChessMove;
 import com.dexstudio.chess.entity.ChessMoveType;
@@ -13,7 +16,7 @@ import com.dexstudio.chess.entity.ChessMoveType;
  * @author Sergii
  *
  */
-public class MiniMax {
+public class MiniMax2 {
 	
 	private ArrayList<ChessFigure> originalPlayerMax = null;
 	private ArrayList<ChessFigure> originalPlayerMin = null;
@@ -23,7 +26,7 @@ public class MiniMax {
 	private ChessMove selectedMove = null;
 	private ChessFigure selectedFigure = null;
 	
-	public MiniMax(ArrayList<ChessFigure> playerMax, ArrayList<ChessFigure> playerMin, int depth) {
+	public MiniMax2(ArrayList<ChessFigure> playerMax, ArrayList<ChessFigure> playerMin, int depth) {
 		this.originalPlayerMax = playerMax;
 		this.originalPlayerMin = playerMin;
 		
@@ -31,37 +34,44 @@ public class MiniMax {
 	}
 	
 	public void startEval() throws CloneNotSupportedException {
-		maxi(this.initialDepth, originalPlayerMax, originalPlayerMin);
+		maxi(this.initialDepth);
 	}
 	
-	private int maxi(int depth, 
-			ArrayList<ChessFigure> localMaxFigures, 
-			ArrayList<ChessFigure> localMinFigures) throws CloneNotSupportedException {
+	private int maxi(int depth) {
 		
 		if(depth == 0) {
 			//Evaluation Function
-			return 1;
+			return Evaluation.simpleEval(originalPlayerMax, originalPlayerMin);
 		}
 		int max = Integer.MIN_VALUE;
 		
 		//Evaluate all Figures
-		for(ChessFigure cf : localMaxFigures) {
+		for(ChessFigure cf : originalPlayerMax) {
+			if(cf.isCaptured()) {
+				continue;
+			}
 			//Does this figure has possible moves?
-			ArrayList<ChessMove> playerMaxMoves = this.getPossibleMovesMax(cf, localMaxFigures, localMinFigures);
+			ArrayList<ChessMove> playerMaxMoves = this.getPossibleMovesMax(cf, originalPlayerMax, originalPlayerMin);
 			if(playerMaxMoves.size() == 0) {
 				continue;
 			}
 			
 			//For each found move
 			for(ChessMove cm : playerMaxMoves) {
-				ArrayList<ChessFigure> nextMaxFigures = this.cloneChessFigures(localMaxFigures);
-				ArrayList<ChessFigure> nextMinFigures = this.cloneChessFigures(localMinFigures);
-				
 				//Do the move on nextMaxFigures
-				this.moveFigure(cf.getX(), cf.getY(), cm.x, cm.y, localMaxFigures);
+				Point oldPosition = new Point(cf.getX(), cf.getY());
+				this.moveFigure(cf.getX(), cf.getY(), cm.x, cm.y, originalPlayerMax);
+				ChessFigure capturedFigure = this.checkIfCanCapture(cm.x, cm.y, originalPlayerMin);
+				if(capturedFigure != null) {
+					capturedFigure.setCaptured();
+				}
 				
+				if(cm.x < 0) {
+					Log.i("INFO", "Here is mistake");
+				}
+				 
 				//Then evaluate min
-				int score = mini(depth - 1, nextMaxFigures, nextMinFigures);
+				int score = mini(depth - 1);
 				if(score > max) {
 					max = score;
 					if(depth == this.initialDepth) {
@@ -69,47 +79,73 @@ public class MiniMax {
 						this.setSelectedFigure(cf);
 					}
 				}
+				
+				this.moveFigure(cm.x, cm.y, oldPosition.x, oldPosition.y, originalPlayerMax);
+				if(capturedFigure != null) {
+					capturedFigure.unsetCaptured();
+				}
 			}
 		}
 		
 		return max;
 	}
 
-	private int mini(int depth, 
-			ArrayList<ChessFigure> localMaxFigures, 
-			ArrayList<ChessFigure> localMinFigures) throws CloneNotSupportedException {
+	private int mini(int depth) {
 		
 		if(depth == 0) {
 			//Evaluation Function
-			return -1;
+			return -(Evaluation.simpleEval(originalPlayerMin, originalPlayerMax));
 		}
 		int min = Integer.MAX_VALUE;
 		
 		//Evaluate all Figures
-		for(ChessFigure cf : localMinFigures) {
+		for(ChessFigure cf : originalPlayerMin) {
 			//Does this figure has possible moves?
-			ArrayList<ChessMove> playerMinMoves = this.getPossibleMovesMin(cf, localMaxFigures, localMinFigures);
+			ArrayList<ChessMove> playerMinMoves = this.getPossibleMovesMin(cf, originalPlayerMax, originalPlayerMin);
 			if(playerMinMoves.size() == 0) {
 				continue;
 			}
 			
 			//For each found move
 			for(ChessMove cm : playerMinMoves) {
-				ArrayList<ChessFigure> nextMaxFigures = this.cloneChessFigures(localMaxFigures);
-				ArrayList<ChessFigure> nextMinFigures = this.cloneChessFigures(localMinFigures);
-				
 				//Do the move on nextMinFigures
-				this.moveFigure(cf.getX(), cf.getY(), cm.x, cm.y, nextMinFigures);
+				Point oldPosition = new Point(cf.getX(), cf.getY());
+				this.moveFigure(cf.getX(), cf.getY(), cm.x, cm.y, originalPlayerMin);
+				ChessFigure capturedFigure = this.checkIfCanCapture(cm.x, cm.y, originalPlayerMax);
+				if(cm.x < 0) {
+					Log.i("INFO", "Here is mistake");
+				}
+				if(capturedFigure != null) {
+					capturedFigure.setCaptured();
+				}
 				
 				//Then evaluate min
-				int score = maxi(depth - 1, nextMaxFigures, nextMinFigures);
+				int score = maxi(depth - 1);
 				if(score > min) {
 					min = score;
+				}
+				
+				this.moveFigure(cm.x, cm.y, oldPosition.x, oldPosition.y, originalPlayerMin);
+				if(capturedFigure != null) {
+					capturedFigure.unsetCaptured();
 				}
 			}
 		}
 		
 		return min;
+	}
+	
+	private ChessFigure checkIfCanCapture(int x, int y,
+			ArrayList<ChessFigure> originalPlayer) {
+		
+		for(ChessFigure cf : originalPlayer) {
+			if(cf.getX() == x && cf.getY() == y && !cf.isCaptured()) {
+				return cf;
+			}
+		}
+		
+		return null;
+		
 	}
 	
 	public void moveFigure(int x, int y, int moveX, int moveY, ArrayList<ChessFigure> alCf) {
@@ -251,7 +287,14 @@ public class MiniMax {
 			break;
 		}
 		
-		return moves;
+		ArrayList<ChessMove> finalMoves = new ArrayList<ChessMove>();
+		for(ChessMove cm : moves) {
+			if(!(cm.x < 1 || cm.x > 8 || cm.y < 1 || cm.y > 8)) {
+				finalMoves.add(cm);
+			}
+		}
+		
+		return finalMoves;
 	}
 	
 	public ArrayList<ChessMove> getPossibleMovesMin(ChessFigure moveCf,
@@ -375,7 +418,14 @@ public class MiniMax {
 			break;
 		}
 		
-		return moves;
+		ArrayList<ChessMove> finalMoves = new ArrayList<ChessMove>();
+		for(ChessMove cm : moves) {
+			if(!(cm.x < 1 || cm.x > 8 || cm.y < 1 || cm.y > 8)) {
+				finalMoves.add(cm);
+			}
+		}
+		
+		return finalMoves;
 	}
 	
 	private ArrayList<ChessFigure> cloneChessFigures(ArrayList<ChessFigure> original) throws CloneNotSupportedException {
