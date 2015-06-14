@@ -6,6 +6,8 @@ import com.dexstudio.chess.entity.ChessBoard;
 import com.dexstudio.chess.entity.ChessFigure;
 import com.dexstudio.chess.entity.ChessMove;
 import com.dexstudio.chess.entity.ChessMoveType;
+import com.dexstudio.chess.entity.FigureColor;
+import com.dexstudio.chess.helpers.MovesCalculator;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -32,7 +34,7 @@ public class ChessUiView extends View {
 	private ChessFigure cf = null;
 	private ArrayList<ChessMove> moves = null;
 	
-	private boolean disableInteraction = false;
+	private boolean disableInteraction = true;
 	
 	//Toasts
 	Toast toast = null;
@@ -80,45 +82,52 @@ public class ChessUiView extends View {
 			ChessUiView.this.highlightedY = (int)(event.getY() / squareSide);
 			
 			if(ChessUiView.this.toHighlight) {
-				//Filter Moves outside the board
-				if(ChessUiView.this.highlightedX >= 1 && ChessUiView.this.highlightedX <= 8 &&
-						ChessUiView.this.highlightedY >= 1 && ChessUiView.this.highlightedY <= 8) {
-					//Already selected, we can move
-					ArrayList<ChessMove> moves = ChessUiView.this.cb.getPossibleMoves(ChessUiView.this.cf);
-					boolean moveFound = false;
-					for(ChessMove cm : moves) {
-						if(cm.x == (9-ChessUiView.this.highlightedY) && cm.y == ChessUiView.this.highlightedX) {
-							switch(cm.getMoveType()) {
-							case CMT_CAPTURE:
-								
-								ChessUiView.this.cb.captureComputer(ChessUiView.this.highlightedY, ChessUiView.this.highlightedX);
-								ChessUiView.this.cf.setXY(9-ChessUiView.this.highlightedY, ChessUiView.this.highlightedX);
-								break;
-								
-							case CMT_ALLOWED:
-								ChessUiView.this.cf.setXY(9-ChessUiView.this.highlightedY, ChessUiView.this.highlightedX);
-								
-								break;
-							default:
-								break;
-							}
-							moveFound = true;
+				//Already selected, we can move
+				ArrayList<ChessMove> moves = MovesCalculator.getPossibleMoves(ChessUiView.this.cf, 
+						ChessUiView.this.cb.getFigures(), FigureColor.WHITE, FigureColor.BLACK);
+				
+				boolean moveFound = false;
+				for(ChessMove cm : moves) {
+					if(cm.x == (ChessUiView.this.highlightedY) && cm.y == ChessUiView.this.highlightedX) {
+						switch(cm.getMoveType()) {
+						case CMT_CAPTURE:
+							MovesCalculator.moveFigureTo(ChessUiView.this.cb.getFigures(), 
+									ChessUiView.this.cf,
+									ChessUiView.this.highlightedY,
+									ChessUiView.this.highlightedX);
+							break;
+							
+						case CMT_ALLOWED:
+							MovesCalculator.moveFigureTo(ChessUiView.this.cb.getFigures(), 
+									ChessUiView.this.cf,
+									ChessUiView.this.highlightedY,
+									ChessUiView.this.highlightedX);
+							
+							break;
+						default:
 							break;
 						}
+						moveFound = true;
+						break;
 					}
-					if(!moveFound) {
-						toast.show();
-					}
+				}
+				if(!moveFound) {
+					toast.show();
 				}
 				ChessUiView.this.toHighlight = false;
 				ChessUiView.this.cf = null;
 			} else {
-				ChessUiView.this.cf = ChessUiView.this.cb.getPlayerFigure(9-ChessUiView.this.highlightedY, ChessUiView.this.highlightedX);
+				ChessUiView.this.cf = MovesCalculator.getFigureAt(ChessUiView.this.cb.getFigures(), 
+						ChessUiView.this.highlightedY, 
+						ChessUiView.this.highlightedX);
 				
 				if(ChessUiView.this.cf != null) {
-					//Selected Figure
-					ChessUiView.this.moves = ChessUiView.this.cb.getPossibleMoves(ChessUiView.this.cf);
-					ChessUiView.this.toHighlight = true;
+					if(ChessUiView.this.cf.isWhite()) {
+						//Selected Figure
+						ChessUiView.this.moves = MovesCalculator.getPossibleMoves(ChessUiView.this.cf, 
+								ChessUiView.this.cb.getFigures(), FigureColor.WHITE, FigureColor.BLACK);
+						ChessUiView.this.toHighlight = true;
+					}
 				}
 			}
 			
@@ -128,7 +137,7 @@ public class ChessUiView extends View {
 		case MotionEvent.ACTION_UP:
 			//TODO Perform Computer Step
 			if(ChessUiView.this.toHighlight == false) {
-				ChessUiView.this.cb.makeComputerMove();
+				//ChessUiView.this.cb.makeComputerMove();
 			}
 			break;
 		}
@@ -172,42 +181,25 @@ public class ChessUiView extends View {
 			return;
 		}
 		
-		for(ChessFigure cf : this.cb.getPlayer()) {
-			String uri = "drawable/white_" + cf.getFigureName();
-			//String uri = "drawable/black_knight";
-			
-			try {
-				int imageResource = getResources().getIdentifier(uri, null, this.getContext().getPackageName());
+		for(int i=0; i<this.cb.getFigures().length; i++) {
+			for(int j=0; j<this.cb.getFigures()[i].length; j++) {
+				ChessFigure cf = this.cb.getFigures()[i][j];
+				if(cf.getFigureColor() == FigureColor.NONE) {
+					continue;
+				}
 				
-				BitmapDrawable bd = (BitmapDrawable) getResources().getDrawable(imageResource);
-				bd.setBounds(0, 0, (int)squareSide, (int)squareSide);
-				Bitmap bm = bd.getBitmap();
-				Paint paint = new Paint();
-				canvas.drawBitmap(bm, squareSide * (cf.getY()), squareSide * (9-cf.getX()), paint);
-			} catch (Exception e) {
-				
-			}
-		}
-		
-		for(ChessFigure cf : this.cb.getComputer()) {
-			//Do not show captured
-			if(cf.isCaptured()) {
-				continue;
-			}
-			// Show captured
-			String uri = "drawable/black_" + cf.getFigureName();
-			//String uri = "drawable/black_knight";
-			
-			try {
-				int imageResource = getResources().getIdentifier(uri, null, this.getContext().getPackageName());
-				
-				BitmapDrawable bd = (BitmapDrawable) getResources().getDrawable(imageResource);
-				bd.setBounds(0, 0, (int)squareSide, (int)squareSide);
-				Bitmap bm = bd.getBitmap();
-				Paint paint = new Paint();
-				canvas.drawBitmap(bm, squareSide * (cf.getY()), squareSide * (cf.getX()), paint);
-			} catch (Exception e) {
-				
+				String uri = "drawable/" + cf.getFigureColorName() + "_" + cf.getFigureName();
+				try {
+					int imageResource = getResources().getIdentifier(uri, null, this.getContext().getPackageName());
+					
+					BitmapDrawable bd = (BitmapDrawable) getResources().getDrawable(imageResource);
+					bd.setBounds(0, 0, (int)squareSide, (int)squareSide);
+					Bitmap bm = bd.getBitmap();
+					Paint paint = new Paint();
+					canvas.drawBitmap(bm, squareSide * (cf.getY()), squareSide * (cf.getX()), paint);
+				} catch (Exception e) {
+					
+				}
 			}
 		}
 		
@@ -247,32 +239,32 @@ public class ChessUiView extends View {
 					if(p.getMoveType() == ChessMoveType.CMT_ALLOWED) {
 						canvas.drawRect(
 								squareSide * p.y + 2, 
-								squareSide * (9 - p.x) + 2, 
+								squareSide * (p.x) + 2, 
 								squareSide * (p.y + 1) - 2, 
-								squareSide * ((9 - p.x) + 1) - 2, 
+								squareSide * ((p.x) + 1) - 2, 
 								hgmPaint);
 					}
 					
 					if(p.getMoveType() == ChessMoveType.CMT_CAPTURE) {
 						canvas.drawRect(
 								squareSide * p.y + 2, 
-								squareSide * (9 - p.x) + 2, 
+								squareSide * (p.x) + 2, 
 								squareSide * (p.y + 1) - 2, 
-								squareSide * ((9 - p.x) + 1) - 2, 
+								squareSide * ((p.x) + 1) - 2, 
 								hgmcPaint);
 						
 						canvas.drawLine(
 								squareSide * p.y + 20, 
-								squareSide * (9 - p.x) + 20, 
+								squareSide * (p.x) + 20, 
 								squareSide * (p.y + 1) - 20, 
-								squareSide * ((9 - p.x) + 1) - 20, 
+								squareSide * ((p.x) + 1) - 20, 
 								hgmcPaint);
 						
 						canvas.drawLine(
 								squareSide * p.y + 20, 
-								squareSide * ((9 - p.x) + 1) - 20, 
+								squareSide * ((p.x) + 1) - 20, 
 								squareSide * (p.y + 1) - 20, 
-								squareSide * (9 - p.x) + 20, 
+								squareSide * (p.x) + 20, 
 								hgmcPaint);
 					}
 				}

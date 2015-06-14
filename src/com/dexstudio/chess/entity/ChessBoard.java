@@ -1,15 +1,13 @@
 package com.dexstudio.chess.entity;
 
-import java.util.ArrayList;
 import java.util.Locale;
 
 import com.dexstudio.chess.algorithms.MiniMax2;
-import com.dexstudio.chess.entity.ChessFigure.FigureType;
+import com.dexstudio.chess.helpers.MovesCalculator;
 
 public class ChessBoard {
 	
-	private ArrayList<ChessFigure> player = new ArrayList<ChessFigure>();
-	private ArrayList<ChessFigure> computer = new ArrayList<ChessFigure>();
+	private ChessFigure[][] board = null;
 	private Algorithm playerAlgorithm = Algorithm.MINI_MAX;
 	private Algorithm computerAlgorithm = Algorithm.MINI_MAX;
 	private int depth = 3;
@@ -35,347 +33,34 @@ public class ChessBoard {
 
 
 	private void initGame() {
-		for(FigureType ft : FigureType.values()) {
-			player.add(new ChessFigure(ft));
-			computer.add(new ChessFigure(ft));
-		}
-	}
-	
-	public ArrayList<ChessFigure> getPlayer() {
-		return this.player;
-	}
-	
-	public ArrayList<ChessFigure> getComputer() {
-		return this.computer;
-	}
-	
-	public void movePlayerFigure(int x, int y, int moveX, int moveY) {
-		for(ChessFigure cf : player) {
-			if(cf.getX() == x && cf.getY() == y) {
-				cf.setXY(moveX, moveY);
+		this.board = new ChessFigure[8][];
+		for(int i=0; i<8; i++) {
+			this.board[i] = new ChessFigure[8];
+			for(int j=0; j<8; j++) {
+				FigureType ft = FigureType.findFigureTypeByCoord(i+1, j+1);
+				this.board[i][j] = new ChessFigure(ft);
 			}
 		}
 	}
 	
-	public void moveComputerFigure(int x, int y, int moveX, int moveY) {
-		for(ChessFigure cf : computer) {
-			if(cf.getX() == x && cf.getY() == y) {
-				cf.setXY(moveX, moveY);
-			}
-		}
-	}
-	
-	public ChessFigure getPlayerFigure(int x, int y) {
-		for(ChessFigure cf : player) {
-			if(cf.getX() == x && cf.getY() == y) {
-				return cf;
-			}
-		}
-		return null;
-	}
-	
-	public ChessFigure getComputerFigure(int x, int y) {
-		for(ChessFigure cf : computer) {
-			if(cf.getX() == x && cf.getY() == y && !cf.isCaptured()) {
-				return cf;
-			}
-		}
-		return null;
-	}
-	
-	public ArrayList<ChessMove> getPossibleMoves(ChessFigure moveCf) {
-		ArrayList<ChessMove> moves = new ArrayList<ChessMove>();
-		switch(moveCf.getFigureName()) {
-		case "pawn":
-			for(int i=1; i<3; i++) {
-				if(moveCf.getX() > 2 && i >= 2) {
-					continue;
-				}
-				if(this.getPlayerFigure(moveCf.getX() + i, moveCf.getY()) == null && 
-						this.getComputerFigure(9 - (moveCf.getX() + i), moveCf.getY()) == null) {
-					moves.add(new ChessMove(moveCf.getX() + i, moveCf.getY(), ChessMoveType.CMT_ALLOWED));
-				}
-			}
-			
-			for(int i=-1; i<2; i++) {
-				if(i == 0) {
-					continue;
-				}
-				if(this.getPlayerFigure(moveCf.getX() + 1, moveCf.getY() + i) == null && 
-						this.getComputerFigure(9 - (moveCf.getX() + 1), moveCf.getY() + i) != null) {
-					moves.add(new ChessMove(moveCf.getX() + 1, moveCf.getY() + i, ChessMoveType.CMT_CAPTURE));
-				}
-			}
-			
-			break;
-			
-		case "king":
-			for(int i=-1; i<2; i++) {
-				for(int j=-1; j<2; j++) {
-					if((i==0 && j==0) || (this.getPlayerFigure(moveCf.getX() + i, moveCf.getY() + j) != null)) {
-						continue;
-					}
-					
-					if(this.getComputerFigure(9 - (moveCf.getX() + i), moveCf.getY() + j) != null) {
-						moves.add(new ChessMove(moveCf.getX() + i, moveCf.getY() + j, ChessMoveType.CMT_CAPTURE));
-					} else {
-						moves.add(new ChessMove(moveCf.getX() + i, moveCf.getY() + j, ChessMoveType.CMT_ALLOWED));
-					}
-				}
-			}
-			break;
-		case "queen":
-			
-			for(int i=-1; i<2; i++) {
-				for(int j=-1; j<2; j++) {
-					for(int k=1; k<8; k++) {
-						if(i==0 && j==0) {
-							continue;
-						}
-						if(this.getPlayerFigure(moveCf.getX() + (i*k), moveCf.getY() + (j*k)) != null) {
-							break;
-						}
-						
-						if(this.getComputerFigure(9 - (moveCf.getX() + i*k), moveCf.getY() + (j*k)) != null) {
-							moves.add(new ChessMove(moveCf.getX() + (i*k), moveCf.getY() + (j*k), ChessMoveType.CMT_CAPTURE));
-							break;
-						}
-						
-						moves.add(new ChessMove(moveCf.getX() + (i*k), moveCf.getY() + (j*k), ChessMoveType.CMT_ALLOWED));
-					}
-				}
-			}
-			break;
-		case "bishop":
-			for(int i=-1; i<2; i++) {
-				for(int j=-1; j<2; j++) {
-					for(int k=1; k<8; k++) {
-						if(i==0 || j==0) {
-							continue;
-						}
-						if(this.getPlayerFigure(moveCf.getX() + (i*k), moveCf.getY() + (j*k)) != null) {
-							break;
-						}
-						
-						if(this.getComputerFigure(9 - (moveCf.getX() + i*k), moveCf.getY() + (j*k)) != null) {
-							moves.add(new ChessMove(moveCf.getX() + (i*k), moveCf.getY() + (j*k), ChessMoveType.CMT_CAPTURE));
-							break;
-						}
-						
-						moves.add(new ChessMove(moveCf.getX() + (i*k), moveCf.getY() + (j*k), ChessMoveType.CMT_ALLOWED));
-					}
-				}
-			}
-			break;
-		case "rook":
-			for(int i=-1; i<2; i++) {
-				for(int j=-1; j<2; j++) {
-					for(int k=1; k<8; k++) {
-						if((!(i==0 || j==0)) || (i==0 && j==0)) {
-							continue;
-						}
-						if(this.getPlayerFigure(moveCf.getX() + (i*k), moveCf.getY() + (j*k)) != null) {
-							break;
-						}
-						if(this.getComputerFigure(9 - (moveCf.getX() + i*k), moveCf.getY() + (j*k)) != null) {
-							moves.add(new ChessMove(moveCf.getX() + (i*k), moveCf.getY() + (j*k), ChessMoveType.CMT_CAPTURE));
-							break;
-						}
-						moves.add(new ChessMove(moveCf.getX() + (i*k), moveCf.getY() + (j*k), ChessMoveType.CMT_ALLOWED));
-					}
-				}
-			}
-			break;
-		case "knight":
-			for(int i=-2; i<3; i++) {
-				for(int j=-2; j<3; j++) {
-					if(Math.abs(Math.abs(i) - Math.abs(j)) != 1 || (i==0 || j==0)) {
-						continue;
-					}
-					if(this.getComputerFigure(9 - (moveCf.getX() + i), moveCf.getY() + j) != null) {
-						moves.add(new ChessMove(moveCf.getX() + i, moveCf.getY() + j, ChessMoveType.CMT_CAPTURE));
-					} else if(this.getPlayerFigure(moveCf.getX() + (i), moveCf.getY() + (j)) == null) {
-						moves.add(new ChessMove(moveCf.getX() + (i), moveCf.getY() + (j), ChessMoveType.CMT_ALLOWED));
-					}
-				}
-			}
-			break;
-		}
-		
-		return moves;
-	}
-	
-	public ArrayList<ChessMove> getPossibleComputerMoves(ChessFigure moveCf) {
-		ArrayList<ChessMove> moves = new ArrayList<ChessMove>();
-		switch(moveCf.getFigureName()) {
-		case "pawn":
-			for(int i=1; i<3; i++) {
-				if(moveCf.getX() > 2 && i >= 2) {
-					continue;
-				}
-				if(this.getComputerFigure(moveCf.getX() + i, moveCf.getY()) == null && 
-						this.getPlayerFigure(9 - (moveCf.getX() + i), moveCf.getY()) == null) {
-					moves.add(new ChessMove(moveCf.getX() + i, moveCf.getY(), ChessMoveType.CMT_ALLOWED));
-				}
-			}
-			
-			for(int i=-1; i<2; i++) {
-				if(i == 0) {
-					continue;
-				}
-				if(this.getComputerFigure(moveCf.getX() + 1, moveCf.getY() + i) == null && 
-						this.getPlayerFigure(9 - (moveCf.getX() + 1), moveCf.getY() + i) != null) {
-					moves.add(new ChessMove(moveCf.getX() + 1, moveCf.getY() + i, ChessMoveType.CMT_CAPTURE));
-				}
-			}
-			
-			break;
-			
-		case "king":
-			for(int i=-1; i<2; i++) {
-				for(int j=-1; j<2; j++) {
-					if((i==0 && j==0) || (this.getComputerFigure(moveCf.getX() + i, moveCf.getY() + j) != null)) {
-						continue;
-					}
-					
-					if(this.getPlayerFigure(9 - (moveCf.getX() + i), moveCf.getY() + j) != null) {
-						moves.add(new ChessMove(moveCf.getX() + i, moveCf.getY() + j, ChessMoveType.CMT_CAPTURE));
-					} else {
-						moves.add(new ChessMove(moveCf.getX() + i, moveCf.getY() + j, ChessMoveType.CMT_ALLOWED));
-					}
-				}
-			}
-			break;
-		case "queen":
-			
-			for(int i=-1; i<2; i++) {
-				for(int j=-1; j<2; j++) {
-					for(int k=1; k<8; k++) {
-						if(i==0 && j==0) {
-							continue;
-						}
-						if(this.getComputerFigure(moveCf.getX() + (i*k), moveCf.getY() + (j*k)) != null) {
-							break;
-						}
-						
-						if(this.getPlayerFigure(9 - (moveCf.getX() + i*k), moveCf.getY() + (j*k)) != null) {
-							moves.add(new ChessMove(moveCf.getX() + (i*k), moveCf.getY() + (j*k), ChessMoveType.CMT_CAPTURE));
-							break;
-						}
-						
-						moves.add(new ChessMove(moveCf.getX() + (i*k), moveCf.getY() + (j*k), ChessMoveType.CMT_ALLOWED));
-					}
-				}
-			}
-			break;
-		case "bishop":
-			for(int i=-1; i<2; i++) {
-				for(int j=-1; j<2; j++) {
-					for(int k=1; k<8; k++) {
-						if(i==0 || j==0) {
-							continue;
-						}
-						if(this.getComputerFigure(moveCf.getX() + (i*k), moveCf.getY() + (j*k)) != null) {
-							break;
-						}
-						
-						if(this.getPlayerFigure(9 - (moveCf.getX() + i*k), moveCf.getY() + (j*k)) != null) {
-							moves.add(new ChessMove(moveCf.getX() + (i*k), moveCf.getY() + (j*k), ChessMoveType.CMT_CAPTURE));
-							break;
-						}
-						
-						moves.add(new ChessMove(moveCf.getX() + (i*k), moveCf.getY() + (j*k), ChessMoveType.CMT_ALLOWED));
-					}
-				}
-			}
-			break;
-		case "rook":
-			for(int i=-1; i<2; i++) {
-				for(int j=-1; j<2; j++) {
-					for(int k=1; k<8; k++) {
-						if((!(i==0 || j==0)) || (i==0 && j==0)) {
-							continue;
-						}
-						if(this.getComputerFigure(moveCf.getX() + (i*k), moveCf.getY() + (j*k)) != null) {
-							break;
-						}
-						if(this.getPlayerFigure(9 - (moveCf.getX() + i*k), moveCf.getY() + (j*k)) != null) {
-							moves.add(new ChessMove(moveCf.getX() + (i*k), moveCf.getY() + (j*k), ChessMoveType.CMT_CAPTURE));
-							break;
-						}
-						moves.add(new ChessMove(moveCf.getX() + (i*k), moveCf.getY() + (j*k), ChessMoveType.CMT_ALLOWED));
-					}
-				}
-			}
-			break;
-		case "knight":
-			for(int i=-2; i<3; i++) {
-				for(int j=-2; j<3; j++) {
-					if(Math.abs(Math.abs(i) - Math.abs(j)) != 1 || (i==0 || j==0)) {
-						continue;
-					}
-					if(this.getPlayerFigure(9 - (moveCf.getX() + i), moveCf.getY() + j) != null) {
-						moves.add(new ChessMove(moveCf.getX() + i, moveCf.getY() + j, ChessMoveType.CMT_CAPTURE));
-					} else if(this.getComputerFigure(moveCf.getX() + (i), moveCf.getY() + (j)) == null) {
-						moves.add(new ChessMove(moveCf.getX() + (i), moveCf.getY() + (j), ChessMoveType.CMT_ALLOWED));
-					}
-				}
-			}
-			break;
-		}
-		
-		return moves;
-	}
-	
-	public void captureComputer(int x, int y) {
-		for(int i=0; i<this.computer.size(); i++) {
-			ChessFigure cf = this.computer.get(i);
-			if(cf.getX() == x && cf.getY() == y) {
-				cf.setCaptured();
-				break;
-			}
-		}
-	}
-
-	public void makeComputerMove() {
-		
+	public ChessFigure[][] getFigures() {
+		return this.board;
 	}
 	
 	public void nextMove() {
 		moveNumber++;
 		
 		if(moveNumber % 2 == 0) {
-			MiniMax2 mm = new MiniMax2(this.computer, this.player, this.depth);
-			try {
-				mm.startEval();
-				//Move the figure
-				this.moveComputerFigure(mm.getSelectedFigure().getX(), 
-						mm.getSelectedFigure().getY(), mm.getSelectedMove().x, mm.getSelectedMove().y);
-				
-			} catch (CloneNotSupportedException e) {
-				e.printStackTrace();
-			}
+			MiniMax2 mm = new MiniMax2(this.board, this.depth, FigureColor.WHITE, FigureColor.BLACK);
+			mm.startEval();
+			//Move the figure
+			MovesCalculator.moveFigureTo(this.board, mm.getSelectedFigure(), mm.getSelectedMove().x, mm.getSelectedMove().y);
 		} else if(moveNumber % 2 != 0) {
-			MiniMax2 mm = new MiniMax2(this.player, this.computer, this.depth);
-			try {
-				mm.startEval();
-				//Move the figure
-				this.movePlayerFigure(mm.getSelectedFigure().getX(), 
-						mm.getSelectedFigure().getY(), mm.getSelectedMove().x, mm.getSelectedMove().y);
-				
-			} catch (CloneNotSupportedException e) {
-				e.printStackTrace();
-			}
+			MiniMax2 mm = new MiniMax2(this.board, this.depth, FigureColor.BLACK, FigureColor.WHITE);
+			mm.startEval();
+			//Move the figure
+			MovesCalculator.moveFigureTo(this.board, mm.getSelectedFigure(), mm.getSelectedMove().x, mm.getSelectedMove().y);
 		}
-	}
-	
-	public ChessBoard selfCopy() throws CloneNotSupportedException {
-		ChessBoard cb = new ChessBoard(this.playerAlgorithm, this.computerAlgorithm, this.depth);
-		cb.computer = new ArrayList<ChessFigure>();
-		for(int i=0; i<this.computer.size(); i++) {
-			this.computer.get(i).clone();
-		}
-		return cb;
 	}
 	
 	public enum Algorithm {
