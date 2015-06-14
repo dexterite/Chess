@@ -56,18 +56,17 @@ public class MiniMax2 {
 				continue;
 			}
 			
+			this.logSelectedFigure(cf.getFigureName(), cf.getX(), cf.getY(), this.initialDepth - depth);
 			//For each found move
 			for(ChessMove cm : playerMaxMoves) {
 				//Do the move on nextMaxFigures
 				Point oldPosition = new Point(cf.getX(), cf.getY());
+				this.logMove(cf.getX(), cf.getY(), cm.x, cm.y, this.initialDepth - depth);
 				this.moveFigure(cf.getX(), cf.getY(), cm.x, cm.y, originalPlayerMax);
 				ChessFigure capturedFigure = this.checkIfCanCapture(cm.x, cm.y, originalPlayerMin);
 				if(capturedFigure != null) {
 					capturedFigure.setCaptured();
-				}
-				
-				if(cm.x < 0) {
-					Log.i("INFO", "Here is mistake");
+					this.logCapture(capturedFigure.getFigureName(), capturedFigure.getX(), capturedFigure.getY(), this.initialDepth - depth);
 				}
 				 
 				//Then evaluate min
@@ -80,9 +79,11 @@ public class MiniMax2 {
 					}
 				}
 				
+				this.logMove(cm.x, cm.y, oldPosition.x, oldPosition.y, this.initialDepth - depth);
 				this.moveFigure(cm.x, cm.y, oldPosition.x, oldPosition.y, originalPlayerMax);
 				if(capturedFigure != null) {
 					capturedFigure.unsetCaptured();
+					this.logCapture(capturedFigure.getFigureName(), capturedFigure.getX(), capturedFigure.getY(), this.initialDepth - depth);
 				}
 			}
 		}
@@ -110,13 +111,12 @@ public class MiniMax2 {
 			for(ChessMove cm : playerMinMoves) {
 				//Do the move on nextMinFigures
 				Point oldPosition = new Point(cf.getX(), cf.getY());
+				this.logMove(cf.getX(), cf.getY(), cm.x, cm.y, this.initialDepth - depth);
 				this.moveFigure(cf.getX(), cf.getY(), cm.x, cm.y, originalPlayerMin);
 				ChessFigure capturedFigure = this.checkIfCanCapture(cm.x, cm.y, originalPlayerMax);
-				if(cm.x < 0) {
-					Log.i("INFO", "Here is mistake");
-				}
 				if(capturedFigure != null) {
 					capturedFigure.setCaptured();
+					this.logCapture(capturedFigure.getFigureName(), capturedFigure.getX(), capturedFigure.getY(), this.initialDepth - depth);
 				}
 				
 				//Then evaluate min
@@ -125,9 +125,11 @@ public class MiniMax2 {
 					min = score;
 				}
 				
+				this.logMove(cm.x, cm.y, oldPosition.x, oldPosition.y, this.initialDepth - depth);
 				this.moveFigure(cm.x, cm.y, oldPosition.x, oldPosition.y, originalPlayerMin);
 				if(capturedFigure != null) {
 					capturedFigure.unsetCaptured();
+					this.logCapture(capturedFigure.getFigureName(), capturedFigure.getX(), capturedFigure.getY(), this.initialDepth - depth);
 				}
 			}
 		}
@@ -163,6 +165,17 @@ public class MiniMax2 {
 			}
 		}
 		return null;
+	}
+	
+	public ArrayList<ChessMove> getPossibleMoves(ChessFigure cf, ArrayList<ChessFigure> playerFigures) {
+		ArrayList<ChessMove> moves = new ArrayList<ChessMove>();
+		
+		switch(cf.getFigureName()) {
+		case "pawn":
+			
+		}
+		
+		return moves;
 	}
 	
 	public ArrayList<ChessMove> getPossibleMovesMax(ChessFigure moveCf, 
@@ -452,6 +465,22 @@ public class MiniMax2 {
 
 	public void setSelectedFigure(ChessFigure selectedFigure) {
 		this.selectedFigure = selectedFigure;
+	}
+	
+	private static String prepend(int depth) {
+		return depth == 0 ? "" :String.format("%"+depth+"s", "    ");
+	}
+	
+	private void logMove(int fromX, int fromY, int toX, int toY, int depth) {
+		Log.i("MOVE", String.format("%sFrom %d,%d to %d,%d", prepend(depth), fromX, fromY, toX, toY));
+	}
+	
+	private void logCapture(String name, int atX, int atY, int depth) {
+		Log.i("CAPTURE", String.format("%s%s at %d,%d", prepend(depth), name, atX, atY));
+	}
+	
+	private void logSelectedFigure(String name, int atX, int atY, int depth) {
+		Log.i("SELECT", String.format("%s%s at %d,%d", prepend(depth), name, atX, atY));
 	}
 
 }

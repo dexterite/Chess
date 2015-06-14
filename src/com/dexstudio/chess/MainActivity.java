@@ -83,7 +83,7 @@ public class MainActivity extends ActionBarActivity {
 		
 		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 		sDepth.setAdapter(adapter);
-		sDepth.setSelection(3);
+		sDepth.setSelection(2);
 	}
 
 	@Override
