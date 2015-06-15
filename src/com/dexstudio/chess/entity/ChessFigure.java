@@ -32,6 +32,10 @@ public class ChessFigure implements Cloneable {
 		return this.ft.getName();
 	}
 	
+	public String getFigureFullName() {
+		return this.ft.getFullName();
+	}
+	
 	public int getX() {
 		return this.x;
 	}

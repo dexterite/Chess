@@ -106,7 +106,7 @@ public class MainActivity extends ActionBarActivity {
 			cb = new ChessBoard(sPlayerStrategy.getSelectedItem().toString(), 
 					sComputerStrategy.getSelectedItem().toString(), 
 					Integer.parseInt(sDepth.getSelectedItem().toString()));
-			cuView.setChessBoard(cb, true);
+			cuView.setChessBoard(cb, false);
 			
 			return true;
 		}

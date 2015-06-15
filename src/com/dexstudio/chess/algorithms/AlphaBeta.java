@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.dexstudio.chess.algorithms;
 
 import java.util.ArrayList;
@@ -12,11 +9,7 @@ import com.dexstudio.chess.entity.ChessMove;
 import com.dexstudio.chess.entity.FigureColor;
 import com.dexstudio.chess.helpers.MovesCalculator;
 
-/**
- * @author Sergii
- *
- */
-public class MiniMax2 extends ChessAlgorithm {
+public class AlphaBeta extends ChessAlgorithm {
 	
 	private ChessFigure[][] originalBoard = null;
 	private FigureColor playerMax = null;
@@ -24,8 +17,7 @@ public class MiniMax2 extends ChessAlgorithm {
 	//Depth
 	private int initialDepth = 3;
 	
-	
-	public MiniMax2(ChessFigure[][] board, int depth, FigureColor playerMax, FigureColor playerMin) {
+	public AlphaBeta(ChessFigure[][] board, int depth, FigureColor playerMax, FigureColor playerMin) {
 		this.originalBoard = board;
 		this.playerMax = playerMax;
 		this.playerMin = playerMin;
@@ -34,17 +26,13 @@ public class MiniMax2 extends ChessAlgorithm {
 	}
 	
 	public void startEval() {
-		maxi(this.initialDepth);
+		alphaBetaMax(Integer.MIN_VALUE, Integer.MAX_VALUE, this.initialDepth);
 	}
 	
-	private int maxi(int depth) {
-		
+	public int alphaBetaMax(int alpha, int beta, int depth) {
 		if(depth == 0) {
-			//Evaluation Function
 			return Evaluation.evaluate(originalBoard, playerMax, playerMin);
 		}
-		int max = Integer.MIN_VALUE;
-		
 		//Evaluate all Figures
 		for(int i=0; i<this.originalBoard.length; i++) {
 			for(int j=0; j<this.originalBoard[i].length; j++) {
@@ -63,9 +51,12 @@ public class MiniMax2 extends ChessAlgorithm {
 					Point oldPosition = new Point(cf.getX(), cf.getY());
 					ChessFigure cfMovedTo = MovesCalculator.moveFigureTo(this.originalBoard, cf, cm.x, cm.y);
 					
-					int score = mini(depth - 1);
-					if(score > max) {
-						max = score;
+					int score = alphaBetaMin(alpha, beta, depth - 1);
+					if(score >= beta) {
+						return beta;
+					}
+					if(score > alpha) {
+						alpha = score;
 						if(depth == this.initialDepth) {
 							this.setSelectedMove(cm);
 							this.setSelectedFigure(cf);
@@ -80,46 +71,40 @@ public class MiniMax2 extends ChessAlgorithm {
 				}
 			}
 		}
-		
-		return max;
+		return alpha;
 	}
-	
-	private int mini(int depth) {
-		
+
+	public int alphaBetaMin(int alpha, int beta, int depth) {
 		if(depth == 0) {
-			//Evaluation Function
 			return Evaluation.evaluate(originalBoard, playerMin, playerMax);
 		}
-		int min = Integer.MAX_VALUE;
-		
 		//Evaluate all Figures
 		for(int i=0; i<this.originalBoard.length; i++) {
 			for(int j=0; j<this.originalBoard[i].length; j++) {
 				ChessFigure cf = this.originalBoard[i][j];
-				if(cf.getFigureColor() != this.playerMin || cf.isNotFigure()) {
+				if(cf.getFigureColor() != this.playerMax || cf.isNotFigure()) {
 					continue;
 				}
 				
 				//Does this figure has possible moves?
-				ArrayList<ChessMove> playerMinMoves = MovesCalculator.getPossibleMoves(cf, this.originalBoard, this.playerMin, this.playerMax);
-				if(playerMinMoves.size() == 0) {
+				ArrayList<ChessMove> playerMaxMoves = MovesCalculator.getPossibleMoves(cf, this.originalBoard, this.playerMin, this.playerMax);
+				if(playerMaxMoves.size() == 0) {
 					continue;
 				}
 				
-				for(ChessMove cm : playerMinMoves) {
+				for(ChessMove cm : playerMaxMoves) {
 					Point oldPosition = new Point(cf.getX(), cf.getY());
 					ChessFigure cfMovedTo = MovesCalculator.moveFigureTo(this.originalBoard, cf, cm.x, cm.y);
 					
-					int score = maxi(depth - 1);
-					if(score < min) {
-						min = score;
-						/*if(depth == this.initialDepth) {
-							this.setSelectedMove(cm);
-							this.setSelectedFigure(cf);
-						}*/
-						logMove(score, depth, false, true);
+					int score = alphaBetaMax(alpha, beta, depth - 1);
+					if(score <= alpha) {
+						return alpha;
+					}
+					if(score < beta) {
+						beta = score;
+						logMove(score, depth, true, true);
 					} else {
-						logMove(score, depth, false, false);
+						logMove(score, depth, true, false);
 					}
 					
 					MovesCalculator.moveFigureTo(this.originalBoard, cf, oldPosition.x, oldPosition.y);
@@ -127,8 +112,6 @@ public class MiniMax2 extends ChessAlgorithm {
 				}
 			}
 		}
-		
-		return min;
+		return beta;
 	}
-
 }

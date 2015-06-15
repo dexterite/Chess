@@ -70,6 +70,10 @@ public enum FigureType {
 	public String getName() {
 		return name;
 	}
+	
+	public String getFullName() {
+		return this.toString();
+	}
 
 	public void setName(String name) {
 		this.name = name;
