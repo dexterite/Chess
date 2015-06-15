@@ -2,7 +2,8 @@
 <resources>
     <string-array name="algorithm_array">
         <item >MiniMax</item>
-        <item >Alpha-Beta Prunning</item>
+        <item >Alpha-Beta Pruning</item>
+        <item >NegaMax</item>
     </string-array>
     
 </resources>

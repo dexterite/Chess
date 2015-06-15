@@ -7,8 +7,8 @@
     <string name="title_automatic">Automatic</string>
     <string name="title_btn_prev">&lt; Prev.</string>
     <string name="title_btn_next">Next &gt;</string>
-    <string name="title_computer">Computer</string>
-    <string name="title_player">Player</string>
+    <string name="title_computer">Black</string>
+    <string name="title_player">White</string>
     <string name="title_depth">Search Depth</string>
     <string name="action_simulation">Simulation</string>
 
